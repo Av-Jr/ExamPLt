@@ -69,5 +69,33 @@
       }
     ],
     "createdAt": 1773164035085
+  },
+  {
+    "id": "EX-1773166006633",
+    "teacher": "vikram.r",
+    "title": "rfggfd",
+    "timeLimit": 60,
+    "dueDate": "2026-04-08T23:36",
+    "questions": [
+      {
+        "id": "q-1773165997801",
+        "type": "mcq",
+        "text": "fgdgfd",
+        "options": [
+          "fgd",
+          "gffg",
+          "fggf"
+        ],
+        "correct": 0
+      },
+      {
+        "id": "q-1773166003418",
+        "type": "code",
+        "text": "gffgdsfgd",
+        "template": "// Write your code here",
+        "lang": "javascript"
+      }
+    ],
+    "createdAt": 1773166006633
   }
 ]
