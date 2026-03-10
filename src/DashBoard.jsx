@@ -1,15 +1,15 @@
 import TeacherDashboard from "./TeacherDashboard.jsx";
 import StudentDashboard from "./StudentDashboard.jsx";
+import "./Dashboard.css";
 
-export default function Dashboard({ user, onLogout }) {
-
-  if (user.role === "teacher") {
-    return <TeacherDashboard user={user} onLogout={onLogout} />;
-  }
-
-  if (user.role === "student") {
-    return <StudentDashboard user={user} onLogout={onLogout} />;
-  }
-
-  return <div>Unknown role</div>;
+export default function DashBoard({ user, onLogout }) {
+  return (
+    <div className="DashScene">
+      {user.role === "teacher" ? (
+        <TeacherDashboard user={user} onLogout={onLogout} />
+      ) : (
+        <StudentDashboard user={user} onLogout={onLogout} />
+      )}
+    </div>
+  );
 }

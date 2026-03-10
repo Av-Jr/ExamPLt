@@ -97,5 +97,80 @@
       }
     ],
     "createdAt": 1773166006633
+  },
+  {
+    "id": "EX-1773169321353",
+    "teacher": "vikram.r",
+    "title": "ghgf",
+    "timeLimit": 60,
+    "dueDate": "2026-03-12T00:31",
+    "questions": [
+      {
+        "id": "q-1773169305838",
+        "type": "mcq",
+        "text": "ggf",
+        "options": [
+          "ghg",
+          "ghg"
+        ],
+        "correct": 0
+      },
+      {
+        "id": "q-1773169317945",
+        "type": "code",
+        "text": "gfhghgh",
+        "template": "// Write your code here",
+        "lang": "javascript"
+      }
+    ],
+    "createdAt": 1773169321353
+  },
+  {
+    "id": "EX-1773169788475",
+    "teacher": "vikram.r",
+    "groupId": "GRP-1773166670399",
+    "title": "fdgfg",
+    "timeLimit": 60,
+    "questions": [
+      {
+        "id": "q-1773169779453",
+        "type": "mcq",
+        "text": "fgdffgfg",
+        "options": [
+          "",
+          ""
+        ],
+        "correct": 0
+      }
+    ],
+    "createdAt": 1773169788475
+  },
+  {
+    "id": "EX-1773170731835",
+    "teacher": "vikram.r",
+    "groupId": "GRP-1773166670399",
+    "title": "hola amigos",
+    "timeLimit": 60,
+    "dueDate": "2026-03-12T00:56",
+    "questions": [
+      {
+        "id": 1773170723221,
+        "type": "mcq",
+        "text": "tyetrghf",
+        "options": [
+          "dgfh",
+          "ghf",
+          "hfg"
+        ],
+        "correct": 0
+      },
+      {
+        "id": 1773170728703,
+        "type": "code",
+        "text": "ghgdfddg",
+        "template": "// Write code here"
+      }
+    ],
+    "createdAt": 1773170731835
   }
 ]

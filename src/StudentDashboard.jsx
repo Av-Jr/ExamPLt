@@ -1,19 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
-import GroupChat from "./GroupChat.jsx"; // Ensure this component is created in your src folder
+import GroupChat from "./GroupChat.jsx";
 import "./Dashboard.css";
 
 export default function StudentDashboard({ user, onLogout }) {
   const [exams, setExams] = useState([]);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState([]); // Track attempted exams
   const [joinedGroups, setJoinedGroups] = useState([]);
   const [activeExam, setActiveExam] = useState(null);
-  const [activeChat, setActiveChat] = useState(null); // Tracks which group chat is open
-  const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(0);
-  const timerRef = useRef(null);
-
+  const [activeChat, setActiveChat] = useState(null);
+  const [answers, setAnswers] = useState({}); // Store user responses
   const [groupCode, setGroupCode] = useState("");
+  const [timeLeft, setTimeLeft] = useState(0); // Timer logic
+  const timerRef = useRef(null);
 
   const loadData = async () => {
     try {
@@ -28,39 +27,16 @@ export default function StudentDashboard({ user, onLogout }) {
       ]);
 
       if (eRes.ok) setExams(eRes.exams || []);
-      if (hRes.ok) setHistory(hRes.history || []);
-      if (gRes.ok) setJoinedGroups(gRes.groups || []);
+      if (hRes.ok) setHistory(hRes.history || []); // Load previous attempts
+      if (gRes.ok) setJoinedGroups(gRes.groups || []); // List joined groups
     } catch (err) {
       console.error("Load error", err);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [user.username]);
+  useEffect(() => { loadData(); }, [user.username]);
 
-  const handleJoinGroup = async () => {
-    if (!groupCode) return;
-    try {
-      const res = await fetch("http://localhost:5001/join-group", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: user.username, groupCode })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        alert(`Successfully joined: ${data.groupName}`);
-        setGroupCode("");
-        loadData();
-      } else {
-        alert(data.message || "Invalid Code");
-      }
-    } catch (err) {
-      alert("Error joining group");
-    }
-  };
-
-  // Timer Countdown Logic
+  // Timer logic for active exams
   useEffect(() => {
     if (activeExam && timeLeft > 0) {
       timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
@@ -73,6 +49,7 @@ export default function StudentDashboard({ user, onLogout }) {
 
   const startExam = (exam) => {
     setActiveExam(exam);
+    setAnswers({}); // Reset answers for new session
     setTimeLeft((exam.timeLimit || 60) * 60);
   };
 
@@ -81,28 +58,20 @@ export default function StudentDashboard({ user, onLogout }) {
     const res = await fetch("http://localhost:5001/attempt-exam", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ examId: activeExam.id, username: user.username, answers })
+      body: JSON.stringify({
+        examId: activeExam.id,
+        username: user.username,
+        answers
+      })
     });
     if ((await res.json()).ok) {
       setActiveExam(null);
-      loadData();
+      loadData(); // Refresh history to show 'Attempted' status
     }
   };
 
-  // 1. Render Group Chat View if a chat is active
-  if (activeChat) {
-    return (
-      <div className="DashScene">
-        <GroupChat
-          groupId={activeChat}
-          user={user}
-          onBack={() => setActiveChat(null)}
-        />
-      </div>
-    );
-  }
+  if (activeChat) return <GroupChat groupId={activeChat} user={user} onBack={() => setActiveChat(null)} />;
 
-  // 2. Render Active Exam View if an exam is started
   if (activeExam) {
     return (
       <div className="DashScene">
@@ -115,10 +84,24 @@ export default function StudentDashboard({ user, onLogout }) {
             <div key={q.id} className="DashSection">
               <p>Q{i + 1}: {q.text}</p>
               {q.type === "code" ? (
-                <Editor height="200px" theme="vs-dark" defaultLanguage="javascript" defaultValue={q.template} onChange={(v) => setAnswers({ ...answers, [q.id]: v })} />
+                <div style={{ border: '1px solid #444', borderRadius: '8px', overflow: 'hidden' }}>
+                  <Editor
+                    height="250px"
+                    theme="vs-dark"
+                    defaultLanguage="javascript"
+                    defaultValue={q.template}
+                    onChange={(v) => setAnswers({ ...answers, [q.id]: v })}
+                  />
+                </div>
               ) : (
                 q.options.map((opt, optIdx) => (
-                  <label key={optIdx} style={{ display: 'block' }}><input type="radio" name={q.id} onChange={() => setAnswers({ ...answers, [q.id]: optIdx })} /> {opt}</label>
+                  <label key={optIdx} style={{ display: 'block', margin: '5px 0' }}>
+                    <input
+                      type="radio"
+                      name={q.id}
+                      onChange={() => setAnswers({ ...answers, [q.id]: optIdx })}
+                    /> {opt}
+                  </label>
                 ))
               )}
             </div>
@@ -129,70 +112,58 @@ export default function StudentDashboard({ user, onLogout }) {
     );
   }
 
-  // 3. Main Dashboard View
   return (
-    <div className="DashScene">
-      <div className="DashCard">
-        <div className="DashHeader">
-          <h1>Student Dashboard</h1>
-          <button className="DashBtn" onClick={onLogout}>Logout</button>
+    <div className="DashCard">
+      <div className="DashHeader">
+        <h1>Student: {user.realName}</h1>
+        <button className="DashBtn logout-btn" onClick={onLogout}>Logout</button>
+      </div>
+
+      <div className="DashGrid">
+        {/* Joined Groups Section */}
+        <div className="DashSection">
+          <h3>Joined Classes</h3>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+            <input value={groupCode} onChange={e => setGroupCode(e.target.value)} placeholder="Enter Group Code" />
+            <button className="DashBtn" onClick={async () => {
+              const res = await fetch("http://localhost:5001/join-group", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user.username, groupCode })
+              });
+              if ((await res.json()).ok) { setGroupCode(""); loadData(); }
+            }}>Join</button>
+          </div>
+          <div className="List">
+            {joinedGroups.map(g => (
+              <div key={g.id} className="Item" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>{g.name}</span>
+                <button className="DashBtn" onClick={() => setActiveChat(g.id)}>Chat</button>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="DashGrid">
-          {/* Join Group Section */}
-          <div className="DashSection">
-            <h3>Join a Group</h3>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input
-                placeholder="Enter Group Code"
-                value={groupCode}
-                onChange={(e) => setGroupCode(e.target.value)}
-              />
-              <button className="DashBtn" onClick={handleJoinGroup}>Join</button>
-            </div>
-
-            <div style={{ marginTop: '20px' }}>
-              <h4>My Classes</h4>
-              <div className="List">
-                {joinedGroups.length > 0 ? joinedGroups.map(g => (
-                  <div key={g.id} className="Item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <strong>{g.name}</strong> <span style={{fontSize: '0.8em', color: '#888'}}>(ID: {g.code})</span>
-                    </div>
-                    {/* Trigger for the new Group Chat feature */}
-                    <button
-                      className="DashBtn"
-                      style={{ padding: '5px 10px', fontSize: '0.8em' }}
-                      onClick={() => setActiveChat(g.id)}
-                    >
-                      Chat / Members
-                    </button>
+        {/* Exams Section with Attempt Tracking */}
+        <div className="DashSection">
+          <h3>Available Exams</h3>
+          <div className="List">
+            {exams.filter(e => joinedGroups.some(g => g.id === e.groupId)).map(e => {
+              const isAttempted = history.some(h => String(h.examId) === String(e.id));
+              return (
+                <div key={e.id} className="Item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>{e.title}</strong>
+                    <p style={{ margin: 0, fontSize: '0.8em' }}>Due: {new Date(e.dueDate).toLocaleString()}</p>
                   </div>
-                )) : <p style={{fontSize: '0.8em'}}>You haven't joined any classes yet.</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Exams Section */}
-          <div className="DashSection">
-            <h3>Available Exams</h3>
-            <div className="List">
-              {exams.length > 0 ? exams.map(e => {
-                const isDone = history.some(h => String(h.examId) === String(e.id));
-                return (
-                  <div key={e.id} className="Item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <strong>{e.title}</strong>
-                      <p style={{ margin: 0, fontSize: '0.8em' }}>Limit: {e.timeLimit}m</p>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '0.9em' }}>{isDone ? "✅ Done" : "⏳ Pending"}</span>
-                      {!isDone && <button className="DashBtn" onClick={() => startExam(e)}>Start</button>}
-                    </div>
-                  </div>
-                );
-              }) : <p>No exams available.</p>}
-            </div>
+                  {isAttempted ? (
+                    <span style={{ color: '#2ecc71', fontWeight: 'bold' }}>✅ Attempted</span>
+                  ) : (
+                    <button className="DashBtn" onClick={() => startExam(e)}>Start</button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
